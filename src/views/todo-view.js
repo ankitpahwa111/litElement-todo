@@ -4,7 +4,7 @@ import "@vaadin/vaadin-button";
 import "@vaadin/vaadin-checkbox";
 import "@vaadin/vaadin-radio-button/vaadin-radio-button";
 import "@vaadin/vaadin-radio-button/vaadin-radio-group";
-import { VisibilityFilters } from "../redux/reducer.js";
+import { VisibilityFilters, getVisibleTodosSelector } from "../redux/reducer.js";
 import { connect } from "pwa-helpers";
 import { store } from "../redux/store.js";
 import {
@@ -13,7 +13,8 @@ import {
   updateFilter,
   updateTodoStatus,
 } from "../redux/actions.js";
-class TodoView extends connect(store)(LitElement) {
+import { BaseView } from "./base-view.js";
+class TodoView extends connect(store)(BaseView) {
   static get properties() {
     return {
       todos: { type: Array }, // array having todos
@@ -23,7 +24,7 @@ class TodoView extends connect(store)(LitElement) {
   }
   // this method is called when redux state changes and it changes the component properties accordingly so that re-render can happen
   stateChanged(state) {
-    (this.todos = state.todos), (this.filter = state.filter);
+    (this.todos = getVisibleTodosSelector(state)), (this.filter = state.filter);
   }
 
   // We don't need this constructor now because the initial state of this component is mapped with Store's state via stateChanged() method
@@ -72,7 +73,7 @@ class TodoView extends connect(store)(LitElement) {
       </div>
       <br>
       <div class="todo-list">
-        ${this.applyFilter(this.todos).map(
+        ${this.todos.map(
           (todo) =>
             html`
               <div class="todo-item">
@@ -142,9 +143,7 @@ class TodoView extends connect(store)(LitElement) {
         return todos;
     }
   }
-  createRenderRoot() {
-    return this;
-  }
+  
 }
 
 customElements.define("todo-view", TodoView);
