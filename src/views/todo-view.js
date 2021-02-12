@@ -4,14 +4,16 @@ import "@vaadin/vaadin-button";
 import "@vaadin/vaadin-checkbox";
 import "@vaadin/vaadin-radio-button/vaadin-radio-button";
 import "@vaadin/vaadin-radio-button/vaadin-radio-group";
-const VisibilityFilters = {
-  // filtering the todos
-  SHOW_ALL: "All", // showing all todos
-  SHOW_ACTIVE: "Active", // show only active todos
-  SHOW_COMPLETED: "Completed", // show only completed todos
-};
-
-class TodoView extends LitElement {
+import { VisibilityFilters } from "../redux/reducer.js";
+import { connect } from "pwa-helpers";
+import { store } from "../redux/store.js";
+import {
+  addTodo,
+  clear_Completed,
+  updateFilter,
+  updateTodoStatus,
+} from "../redux/actions.js";
+class TodoView extends connect(store)(LitElement) {
   static get properties() {
     return {
       todos: { type: Array }, // array having todos
@@ -19,13 +21,19 @@ class TodoView extends LitElement {
       task: { type: String }, // new task
     };
   }
-  constructor() {
-    // initialising properties
-    super();
-    this.todos = [];
-    this.filter = VisibilityFilters.SHOW_ALL;
-    this.task = "";
+  // this method is called when redux state changes and it changes the component properties accordingly so that re-render can happen
+  stateChanged(state) {
+    (this.todos = state.todos), (this.filter = state.filter);
   }
+
+  // We don't need this constructor now because the initial state of this component is mapped with Store's state via stateChanged() method
+  // constructor() {
+  //   // initialising properties
+  //   super();
+  //   this.todos = [];
+  //   this.filter = VisibilityFilters.SHOW_ALL;
+  //   this.task = "";
+  // }
   render() {
     return html`
         <style>
@@ -53,7 +61,7 @@ class TodoView extends LitElement {
       <div class="input-layout" @keyup="${this.shortCutListener}">
         <vaadin-text-field
           placeholder="Task"
-          value="${this.task}"
+          value="${this.task || ""}"
           @change="${this.updateTask}"
         >
         </vaadin-text-field>
@@ -102,13 +110,7 @@ class TodoView extends LitElement {
   addTodo() {
     // this functions checks if task exists , and if it does , it appends that task to todos array
     if (this.task) {
-      this.todos = [
-        ...this.todos,
-        {
-          task: this.task,
-          complete: false,
-        },
-      ];
+      store.dispatch(addTodo(this.task));
       this.task = "";
     }
   }
@@ -120,16 +122,15 @@ class TodoView extends LitElement {
   shortCutListener(e) {
     if (e.key === "Enter") this.addTodo();
   }
+
   updateTodoStatus(updatedTodo, complete) {
-    this.todos = this.todos.map((todo) =>
-      updatedTodo === todo ? { ...updatedTodo, complete } : todo
-    );
+    store.dispatch(updateTodoStatus(updatedTodo, complete));
   }
   filterChanged(e) {
-    this.filter = e.target.value;
+    store.dispatch(updateFilter(e.detail.value));
   }
   clearCompleted() {
-    this.todos = this.todos.filter((todo) => !todo.complete);
+    store.dispatch(clear_Completed());
   }
   applyFilter(todos) {
     switch (this.filter) {
@@ -143,7 +144,7 @@ class TodoView extends LitElement {
   }
   createRenderRoot() {
     return this;
-}
+  }
 }
 
 customElements.define("todo-view", TodoView);
